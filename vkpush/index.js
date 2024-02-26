@@ -10,46 +10,55 @@ const crypto_1 = require('crypto');
 const { listen } = require('../vkpush/push-receiver');
 class VKPUSH{
 
-constructor(vk_token, callback) {
-    
-
-    this.vktoken = vk_token;
-    this._init()
+constructor(callback, creds=null) {
     this._callbackf = callback
+	this.creds = creds
+	this.token = null
+	this.id = Math.floor(Math.random() * 999999999999999);
   }
 
-_init = async function()
+init = async function()
 {
-    let checkinres = await this.executeCheckin()
-    let checkindata = await this.parseCheckinResponse(checkinres)
-    let fiddata = await this.registerFid('api-project-841415684880', 'AIzaSyCL17U2Q5i1NVwIcXgMOZMidSRFHyGYgwM', '1:841415684880:android:632f429381141121')
-    let fidcred = await this.getCredentials(checkindata.androidId, checkindata.securityToken, '841415684880', 'com.vkontakte.android', fiddata.authToken.token, fiddata.fid)
-    let token = fidcred.split("=")[1]
-    let creds = {
+    if(!this.creds){
 
-        "gcm":
-        {
-            "androidId": checkindata.androidId,
-            "securityToken": checkindata.securityToken
-        },
-        'keys':
-        {
-            "privateKey": '1',
-            "publicKey": '1',
-            "authSecret": '1'
+        let checkinres = await this.executeCheckin()
+        let checkindata = await this.parseCheckinResponse(checkinres)
+        let fiddata = await this.registerFid('api-project-841415684880', 'AIzaSyCL17U2Q5i1NVwIcXgMOZMidSRFHyGYgwM', '1:841415684880:android:632f429381141121')
+        let fidcred = await this.getCredentials(checkindata.androidId, checkindata.securityToken, '841415684880', 'com.vkontakte.android', fiddata.authToken.token, fiddata.fid)
+
+        this.token = fidcred.split("=")[1]
+        this.creds = {
+
+            "gcm":
+                {
+                    "androidId": checkindata.androidId,
+                    "securityToken": checkindata.securityToken
+                },
+
+            'keys':
+                {
+                    "privateKey": '1',
+                    "publicKey": '1',
+                    "authSecret": '1'
+                }
+
         }
-
     }
+    
 
 
     
 
-    listen(creds, this._callbackf)
-
-    axios.get(`https://api.vk.com/method/account.registerDevice?&system_version=13&type=4&pushes_granted=1&push_provider=gcm&device_id=fdfc22403c8afedb%3Acfb99fa622fd92da74af822743ffaa56&device_model=VKPUSH&has_google_services=1&app_id=2274003&companion_apps=vk_client&app_version=18792&device_id=VKPUSH&access_token=${this.vktoken}&v=5.131&token=${token}`);
-
+    return listen(this.creds, this.returnMessage)
+	
 }
-
+returnMessage = (message) => {
+    let json = {
+        'fromID': this.id,
+        'notification': message
+    }
+    this._callbackf(json)
+}
 buildCheckinRequest = async function()
 {
 
