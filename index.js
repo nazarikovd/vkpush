@@ -1,15 +1,20 @@
 const VKPUSH = require('./vkpush')
-const axios = require('axios');
-
-const express = require('express');
-const app = express();
-const events = []
-let clients = [];
-const bodyParser = require('body-parser');
-const jsonfile = require('jsonfile') 
 const path_for_save = 'save.json';
 
+
+const axios = require('axios');
+const express = require('express');
+const bodyParser = require('body-parser');
+const jsonfile = require('jsonfile')
+
+let events = []
+let clients = [];
+
+const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
+
+
+
 
 app.get('/getPushToken', function(req, res) {
 	
@@ -213,28 +218,50 @@ app.get('/restore', function(req, res) {
 app.get('/gui', function(req, res) { // нахуй я сюда пришел???
 
 	let resp = `
-	<head>
-	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
-	<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
-	<script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
-	<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+<!DOCTYPE html>
+<html lang="en">
 
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-	<title> vkpush </title>
-	</head><body>
-	<ul class="list-group">`
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+    <title>vkpush</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/material-design-icons/3.0.1/iconfont/material-icons.min.css">
+</head>
+<body>
+    <h1 style="color: var(--bs-gray-100);background: var(--bs-gray-800);font-size: 20.18px;text-align: left;padding-top: 8px;padding-right: 8px;padding-bottom: 15px;padding-left: 15px;">vkpush</h1>
+    <div class="card-group" style="position: relative;overflow: visible;">
+
+
+
+`
 	
 	if(!req.query.id){
 		for (let client of clients){
 			resp = resp + 
-			`<li class="list-group-item"> Client ID: `+client.id+`<br> AndroidID: `+client.creds.gcm.androidId+`<br> secutityToken: `+client.creds.gcm.androidId+`<div class="dropdown show"><a class="btn btn-secondary dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">...</a>
-			<div class="dropdown-menu" aria-labelledby="dropdownMenuLink">
-			<a class="dropdown-item" href="/remove?id=`+client.id+`">remove</a>
-			<a class="dropdown-item" href="/gui?id=`+client.id+`">read</a>
-			</div></div></li>`
+			`
+			<div class="card" style="min-width: 400px;max-width: 400px;min-height: 150px;max-height: 150px;box-shadow: 0px 0px 4px 0px;">
+            <div class="card-body">
+                <div class="col" style="padding: 8px;">
+                    <div class="row">
+                        <div class="col"><code>ClientID: `+client.id+`</code></div>
+                    </div>
+                    <div class="row">
+                        <div class="col"><code>AndroidID: `+client.creds.gcm.androidId+`</code></div>
+                        <div class="col"><code>securityToken: `+client.creds.gcm.androidId+`</code></div>
+                    </div>
+                    <div class="row">
+                        <div class="col text-end"><a href="/gui?id=`+client.id+`">read</a> <a href="/remove?id=`+client.id+`">remove</a></div>
+                    </div>
+                </div>
+            </div>
+        </div>`
 		}
-		resp = resp + `</ul>`
+		resp = resp + `</div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>`
 		res.send(resp)
 		
 	}else{
@@ -243,49 +270,73 @@ app.get('/gui', function(req, res) { // нахуй я сюда пришел???
 		let resevent = events.filter((event) => event.id == id)
 			
 		for (let event1 of resevent){
-			let dat = event1.notification.notification.appData
+			let parsed = event1.parsed
 			let img
 			let title
 			let body
-			
-			var op = {year: 'numeric',month: 'numeric',day: 'numeric',weekday: 'short',hour: 'numeric',minute: 'numeric'};
+			let op = {year: 'numeric',month: 'numeric',day: 'numeric',weekday: 'short',hour: 'numeric',minute: 'numeric'};
 			let sent = new Date(Number(event1.notification.notification.sent))
 			sent = sent.toLocaleString("ru", op)
 
-			for (let key of dat){
-				
-				if(key.key == 'image'){
-					img = JSON.parse(key.value)[0].url
-				}
-				if(key.key == 'title'){
-					title = key.value
-				}
-				if(key.key == 'body'){
-					body = key.value
-
-
-				}
-				
-			}
-			if(!body){
-				resp = resp + ''
-			}else{
-				
-				resp = resp + 
-					`
-					<li class="list-group-item"> <div class="toast-header">
-						<img class="bd-placeholder-img rounded me-2" width="20" height="20" preserveAspectRatio="xMidYMid slice" focusable="false" src="`+img+`"></img>
-
-						<strong class="me-auto">`+title+`</strong>
-						<small>`+sent+`</small>
-					</div>
-					<div class="toast-body">
-						`+body.slice(0, 200).replaceAll('\n', '<br>')+`...
-					</div></li>`
+			switch (parsed.type){
+				case 'message':
+					img = parsed.img.url
+					title = parsed.title
+					message = parsed.message
+					resp = resp + 
+	`
+	<div class="card" style="min-width: 300px;max-width: 300px;min-height: 150px;max-height: 400px;box-shadow: 0px 0px 4px 0px;">
+	    <div class="card-body">
+	        <div class="col" style="padding: 8px;">
+	            <div class="row">
+	                <div class="col" style="padding: 8px;"><img style="width: 20px;height: 20px;" src="`+img+`"/><strong style="padding: 8px;">`+title+`</strong><small class="d-xxl-flex" style="padding-left: 32px;">`+sent+`</small></div>
+	            </div>
+	            <div class="row">
+	                <div class="col" style="padding-top: 8px;">
+	                    <p>
+							`+message.slice(0, 200).replaceAll('\n', '<br>')+`...
+						</p>
+	                </div>
+	            </div>
+	        </div>
+	    </div>
+	</div>
+	`			
+				break;
+				case 'validation':
+					img = 'https://sun9-47.userapi.com/qr4lFuc6TeSja5gSB_q-nXPLoF9nbGZcv9IuKw/MBsiALCwZhQ.png'
+					title = "Подтверждение"
+					message = parsed.info+`<br><br>`+parsed.hash
+					resp = resp + 
+	`
+	<div class="card" style="min-width: 300px;max-width: 300px;min-height: 150px;max-height: 400px;box-shadow: 0px 0px 4px 0px;">
+	    <div class="card-body">
+	        <div class="col" style="padding: 8px;">
+	            <div class="row">
+	                <div class="col" style="padding: 8px;"><img style="width: 20px;height: 20px;" src="`+img+`"/><strong style="padding: 8px;">`+title+`</strong><small class="d-xxl-flex" style="padding-left: 32px;">`+sent+`</small></div>
+	            </div>
+	            <div class="row">
+	                <div class="col" style="padding-top: 8px;">
+	                    <p>
+							`+message.replaceAll('\n', '<br>')+`
+						</p>
+	                </div>
+	            </div>
+	        </div>
+	    </div>
+	</div>
+	`			
+				break;
 			}
 			
+			
 		}
-		resp = resp + `</ul>`
+
+		resp = resp + `</div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>`
 		res.send(resp)
 		
 	}
@@ -296,7 +347,7 @@ app.get('/gui', function(req, res) { // нахуй я сюда пришел???
 async function collect(data){
 	let id = data.fromID
 	let notification = data.notification
-	events.push({"id":id, "notification":notification})
+	events.push({"id":id, "notification":notification, "parsed": parse(notification)})
 }
 
 function orange (data){
@@ -310,7 +361,79 @@ function red (data){
 	return '\x1b[91m'+data+'\x1b[0m'
 }
 
+function parse(message){
+try{	
+	let resp = {}
+	let notification = message.notification
+	if(!isset(() => notification)){
+		resp.success = false
+		resp.error = '[notification] empty'
+		resp.type = 'unknown'
+		return resp
+	}
+	let appData = notification.appData
+	if(!isset(() => appData)){
+		resp.success = false
+		resp.error = '[appData] empty'
+		resp.type = 'unknown'
+		return resp
+	}
+	let app = notification.category
+	let normalise = {}
+	for(let keys of appData){
+		normalise[keys.key] = keys.value
+	}
+	let type = normalise.type
 
+	switch(type){
+		case 'msg':
+			resp.success = true
+			resp.type = 'message'
+			resp.from_id = normalise.from_id
+			resp.to_id = normalise.to_id
+			resp.message = normalise.body
+			resp.title = normalise.title
+			resp.img = JSON.parse(normalise.image)[0]
+			resp.url = normalise.url
+			resp.msgid = JSON.parse(normalise.context).msg_id
+			break;
+
+		case 'validate_action':
+			resp.success = true
+			resp.type = 'validation'
+			resp.hash = JSON.parse(normalise.context).confirm_hash
+			resp.info = JSON.parse(normalise.context).confirm
+			break;
+
+		default:
+			resp.success = false
+			resp.error = 'type unknown'
+			resp.type = 'unknown'
+	}
+
+
+
+	return resp
+}
+catch(e){
+	resp.success = false
+	resp.error = 'parse error'
+	resp.type = 'unknown'
+	return resp
+}
+}
+
+function isset (accessor) {
+  try {
+    // Note we're seeing if the returned value of our function is not
+    // undefined or null
+    return accessor() !== undefined && accessor() !== null
+  } catch (e) {
+    // And we're able to catch the Error it would normally throw for
+    // referencing a property of undefined
+    return false
+  }
+}
 
 
 
