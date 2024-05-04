@@ -1,5 +1,6 @@
 
 
+
 //надеюсь этот ебанный кринж никто никогда не увидит!!!!
 
 
@@ -166,6 +167,8 @@ registerFid = async function(pr, key, appId)
 
         headers:
         {
+			"X-Android-Cert": "48761EEF50EE53AFC4CC9C5F10E6BDE7F8F5B82F",
+			"X-Android-Package": "com.vkontakte.android",
             "Content-Type": "application/json",
             "x-goog-api-key": key
         },
