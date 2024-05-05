@@ -1,0 +1,30 @@
+<nav class="navbar navbar-light navbar-expand-md custom-header" style="background: rgb(20,42,82);">
+    <div class="container-fluid">
+        <div><a class="navbar-brand" href="/gui" style="font-family: Montserrat, sans-serif;font-weight: bold;background: #00000000;">VKPUSH</a><button data-bs-toggle="collapse" class="navbar-toggler" data-bs-target="#navbar-collapse"><span class="visually-hidden">nav</span><span class="navbar-toggler-icon"></span></button></div>
+            <div class="collapse navbar-collapse" id="navbar-collapse">
+                <ul class="navbar-nav links">
+
+                    <li class="nav-item" href="/" style="cursor: pointer;color: #ffffff;" onclick="document.getElementById('new').innerHTML = 'New...'; fetch('/getPushToken').then(() => location.reload())">
+					<a id="new" class="nav-link" style="color: #ffffff;">New</a></li>
+					
+                    <li class="nav-item" style="color: #ffffff;"><a class="nav-link" href="/getClient" style="color: #ffffff;">GetAll</a></li>
+					
+                    <li class="nav-item" href="/" style="cursor: pointer;color: #ffffff;" onclick="document.getElementById('sav').innerHTML = 'Save...'; fetch('/save').then(() => location.reload())">
+					<a id="sav" class="nav-link" style="color: #ffffff;">Save</a></li>
+					
+                    <li class="nav-item" href="/" style="cursor: pointer;color: #ffffff;" onclick="document.getElementById('res').innerHTML = 'Restore...'; fetch('/restore').then(() => location.reload())">
+					<a id="res" class="nav-link" style="color: #ffffff;">Restore</a></li>
+					
+					<li class="nav-item" style="color: #ffffff;"><span class="nav-link" style="color: #ffffff;"></span></li>
+					
+					<li class="nav-item" style="color: #ffffff;">
+						<button onclick="location.reload()" class="btn btn-primary d-flex align-items-center align-self-center" type="button" style="height: 38px;background: #465bae;">
+							<i class="fa fa-refresh"></i>
+						</button>
+					</li>
+
+                    <li class="nav-item" style="color: #ffffff;"></li>
+                </ul>
+            </div>
+    </div>
+</nav>

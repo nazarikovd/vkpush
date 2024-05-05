@@ -1,6 +1,6 @@
 const VKPUSH = require('./vkpush')
 const path_for_save = 'save.json';
-
+const fs = require('node:fs');
 
 const axios = require('axios');
 const express = require('express');
@@ -16,13 +16,14 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 
 
+
 app.get('/getPushToken', function(req, res) {
 	
 	let bb = new VKPUSH(collect)
 	bb.init().then((cl) => {
 
 		let cid = bb.id
-		clients.push({'id':cid, 'client': cl, 'creds': bb.creds})
+		clients.push({'id':cid, 'client': cl, 'creds': bb.creds, 'token': bb.token})
 			
 		res.send({
 			
@@ -46,8 +47,34 @@ app.get('/getPushToken', function(req, res) {
 
 app.get('/get', function(req, res) {
 	
-	let id = req.query.id
-	let resp = events.filter((event) => event.id == id)
+	let id = req.query.id; let resp
+	if(!id){
+		resp = events
+	}else{
+		resp = events.filter((event) => event.id == id)
+	}
+	
+	if(resp){
+		res.send({
+			"response": resp
+		})
+	}else{
+		res.send({
+			"response": []
+		})
+	}
+
+})
+
+app.get('/getClient', function(req, res) {
+	
+	let id = req.query.id; let resp
+	if(!id){
+		resp = clients
+	}else{
+		resp = clients.filter((event) => clients.id == id)
+	}
+	
 	if(resp){
 		res.send({
 			"response": resp
@@ -215,60 +242,50 @@ app.get('/restore', function(req, res) {
 	})
 })
 
-app.get('/gui', function(req, res) { // нахуй я сюда пришел???
+app.get('/gui', async function(req, res) { // нахуй я сюда пришел???
 
-	let resp = `
-<!DOCTYPE html>
-<html lang="en">
+let commonhtml = await fs.readFileSync('./html/common.html', 'utf8');
+let headerhtml = await fs.readFileSync('./html/header.html', 'utf8');
+let ctablehtml = await fs.readFileSync('./html/clientable.html', 'utf8');
+let etablehtml = await fs.readFileSync('./html/eventable.html', 'utf8');
+let crowhtml = await fs.readFileSync('./html/clientrow.html', 'utf8');
+let erowhtml = await fs.readFileSync('./html/eventrow.html', 'utf8');
+let footerhtml = await fs.readFileSync('./html/footer.html', 'utf8');
+let clientshtml = ''
 
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
-    <title>vkpush</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/material-design-icons/3.0.1/iconfont/material-icons.min.css">
-</head>
-<body>
-    <h1 style="color: var(--bs-gray-100);background: var(--bs-gray-800);font-size: 20.18px;text-align: left;padding-top: 8px;padding-right: 8px;padding-bottom: 15px;padding-left: 15px;">vkpush</h1>
-    <div class="card-group" style="position: relative;overflow: visible;">
+	let resp = commonhtml+headerhtml
 
-
-
-`
-	
 	if(!req.query.id){
-		for (let client of clients){
-			resp = resp + 
-			`
-			<div class="card" style="min-width: 400px;max-width: 400px;min-height: 150px;max-height: 150px;box-shadow: 0px 0px 4px 0px;">
-            <div class="card-body">
-                <div class="col" style="padding: 8px;">
-                    <div class="row">
-                        <div class="col"><code>ClientID: `+client.id+`</code></div>
-                    </div>
-                    <div class="row">
-                        <div class="col"><code>AndroidID: `+client.creds.gcm.androidId+`</code></div>
-                        <div class="col"><code>securityToken: `+client.creds.gcm.androidId+`</code></div>
-                    </div>
-                    <div class="row">
-                        <div class="col text-end"><a href="/gui?id=`+client.id+`">read</a> <a href="/remove?id=`+client.id+`">remove</a></div>
-                    </div>
-                </div>
-            </div>
-        </div>`
-		}
-		resp = resp + `</div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
-</body>
 
-</html>`
-		res.send(resp)
+
+		if(clients.length < 1){
+			clientshtml = `<span class="nav-item" > nothing there <span>`
+
+		}else{
+
+			for (let client of clients){
+
+			clientshtml += crowhtml.replaceAll('%cid%', client.id).replace('%aid%', client.creds.gcm.androidId).replace('%st%', client.creds.gcm.securityToken).replace('%token%', client.token)
+
+			}
+			clientshtml = ctablehtml.replace('%clients%', clientshtml)
+
+		}
+
+		
+
+
+		resp += clientshtml
+		resp += footerhtml
+ 		res.send(resp)
 		
 	}else{
 		
 		let id = req.query.id
 		let resevent = events.filter((event) => event.id == id)
-			
+		let clientshtml = ''
+
+		
 		for (let event1 of resevent){
 			let parsed = event1.parsed
 			let img
@@ -283,60 +300,39 @@ app.get('/gui', function(req, res) { // нахуй я сюда пришел???
 					img = parsed.img.url
 					title = parsed.title
 					message = parsed.message
-					resp = resp + 
-	`
-	<div class="card" style="min-width: 300px;max-width: 300px;min-height: 150px;max-height: 400px;box-shadow: 0px 0px 4px 0px;">
-	    <div class="card-body">
-	        <div class="col" style="padding: 8px;">
-	            <div class="row">
-	                <div class="col" style="padding: 8px;"><img style="width: 20px;height: 20px;" src="`+img+`"/><strong style="padding: 8px;">`+title+`</strong><small class="d-xxl-flex" style="padding-left: 32px;">`+sent+`</small></div>
-	            </div>
-	            <div class="row">
-	                <div class="col" style="padding-top: 8px;">
-	                    <p>
-							`+message.slice(0, 200).replaceAll('\n', '<br>')+`...
-						</p>
-	                </div>
-	            </div>
-	        </div>
-	    </div>
-	</div>
-	`			
+					message.slice(0, 200).replaceAll('\n', '<br>')+`...`
 				break;
 				case 'validation':
 					img = 'https://sun9-47.userapi.com/qr4lFuc6TeSja5gSB_q-nXPLoF9nbGZcv9IuKw/MBsiALCwZhQ.png'
 					title = "Подтверждение"
 					message = parsed.info+`<br><br>`+parsed.hash
-					resp = resp + 
-	`
-	<div class="card" style="min-width: 300px;max-width: 300px;min-height: 150px;max-height: 400px;box-shadow: 0px 0px 4px 0px;">
-	    <div class="card-body">
-	        <div class="col" style="padding: 8px;">
-	            <div class="row">
-	                <div class="col" style="padding: 8px;"><img style="width: 20px;height: 20px;" src="`+img+`"/><strong style="padding: 8px;">`+title+`</strong><small class="d-xxl-flex" style="padding-left: 32px;">`+sent+`</small></div>
-	            </div>
-	            <div class="row">
-	                <div class="col" style="padding-top: 8px;">
-	                    <p>
-							`+message.replaceAll('\n', '<br>')+`
-						</p>
-	                </div>
-	            </div>
-	        </div>
-	    </div>
-	</div>
-	`			
+					message.replaceAll('\n', '<br>')
+				break;
+				case 'erase_messages':
+					img = 'https://sun9-47.userapi.com/qr4lFuc6TeSja5gSB_q-nXPLoF9nbGZcv9IuKw/MBsiALCwZhQ.png'
+					title = parsed.title
+					message = parsed.message
+					message.replaceAll('\n', '<br>')
+				break;
+			case 'show_message':
+					img = 'https://sun9-47.userapi.com/qr4lFuc6TeSja5gSB_q-nXPLoF9nbGZcv9IuKw/MBsiALCwZhQ.png'
+					title = parsed.title
+					message = parsed.message
+					message.slice(0, 200).replaceAll('\n', '<br>')+`...`
+				break;
+				default:
+					img = 'https://sun9-47.userapi.com/qr4lFuc6TeSja5gSB_q-nXPLoF9nbGZcv9IuKw/MBsiALCwZhQ.png'
+					title = "Уведомление"
+					message = JSON.stringify(event1)
+					message.replaceAll('\n', '<br>')
 				break;
 			}
-			
-			
+		clientshtml += erowhtml.replaceAll('%text%', message).replaceAll('%url%', img).replaceAll('%title%', title)
+		
 		}
-
-		resp = resp + `</div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-
-</html>`
+		clientshtml = etablehtml.replace('%events%', clientshtml)
+		resp += clientshtml
+		resp += footerhtml
 		res.send(resp)
 		
 	}
@@ -405,6 +401,20 @@ try{
 			resp.info = JSON.parse(normalise.context).confirm
 			break;
 
+		case 'erase_messages':
+			resp.success = true
+			resp.type = 'erase_messages'
+			resp.title = 'Erase'
+			resp.message = 'Удаление уведомления '+normalise.items
+
+			break;
+		case 'show_message':
+			resp.success = true
+			resp.type = 'show_message'
+			resp.title = normalise.title
+			resp.message = normalise.body
+
+			break;
 		default:
 			resp.success = false
 			resp.error = 'type unknown'
