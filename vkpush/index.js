@@ -11,22 +11,39 @@ const crypto_1 = require('crypto');
 const { listen } = require('../vkpush/push-receiver');
 class VKPUSH{
 
-constructor(callback, creds=null) {
+constructor(callback, params=null) {
+
     this._callbackf = callback
-	this.creds = creds
-	this.token = null
-	this.id = Math.floor(Math.random() * 999999999999999);
+    this.token = null
+    this.id = null
+    this.restoreParams = null
+    this.isRestore = false
+
+    if(params){
+        this.isRestore = true
+        this.restoreParams = params
+    }
+
   }
 
 init = async function()
 {
-    if(!this.creds){
+    
+
+    if(this.isRestore){
+
+        this.id = this.restoreParams.id
+        this.token = this.restoreParams.token
+        this.creds = this.restoreParams.creds
+
+    }else{
 
         let checkinres = await this.executeCheckin()
         let checkindata = await this.parseCheckinResponse(checkinres)
         let fiddata = await this.registerFid('api-project-841415684880', 'AIzaSyCL17U2Q5i1NVwIcXgMOZMidSRFHyGYgwM', '1:841415684880:android:632f429381141121')
         let fidcred = await this.getCredentials(checkindata.androidId, checkindata.securityToken, '841415684880', 'com.vkontakte.android', fiddata.authToken.token, fiddata.fid)
 
+        this.id = Math.floor(Math.random() * 999999999999999);
         this.token = fidcred.split("=")[1]
         this.creds = {
 
@@ -44,11 +61,8 @@ init = async function()
                 }
 
         }
+
     }
-    
-
-
-    
 
     return listen(this.creds, this.returnMessage)
 	

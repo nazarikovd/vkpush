@@ -5,6 +5,6 @@
     <div class="btn-group" role="group">
 	<button onclick="navigator.clipboard.writeText('%token%')" class="btn btn-primary" type="button" style="background: #465bae;"><i class="fa fa-copy" style="position: static;"></i></button>
 	<button onclick="location.href='/gui?id=%cid%'" class="btn btn-primary" type="button" style="background: #465bae;"><i class="fa fa-list-alt" style="position: static;"></i></button>
-	<button onclick="location.href='/remove?id=%cid%'" class="btn btn-primary" type="button" style="background: var(--bs-red);"><i class="fa fa-remove"></i></button></div>
+	<button onclick="fetch('/remove?id=%cid%').then(() => location.reload())" class="btn btn-primary" type="button" style="background: var(--bs-red);"><i class="fa fa-remove"></i></button></div>
     </td>
 </tr>

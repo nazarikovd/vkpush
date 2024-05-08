@@ -130,6 +130,18 @@ app.get('/addByCreds', function(req, res) {
 	
 	let aId = req.query.aid
 	let sT = req.query.st
+	let token = null;
+	let id = null
+
+	if(req.query.token){
+		token = req.query.token
+	}
+	if(req.query.id){
+		id = req.query.id
+	}else{
+		id = Math.floor(Math.random() * 999999999999999);
+	}
+
 	if(clients.length > 0){
 		
 		index = clients.findIndex((item) => item.creds.gcm.androidId == aId)
@@ -160,11 +172,20 @@ app.get('/addByCreds', function(req, res) {
                 }
 
     }
-	let bb = new VKPUSH(collect, creds)
+
+    let params = {
+
+    	"id": id,
+    	"token": token,
+    	"creds": creds
+
+    }
+
+	let bb = new VKPUSH(collect, params)
 		bb.init().then((cl) => {
 
 			let cid = bb.id
-			clients.push({'id':cid, 'client': cl, "creds": creds})
+			clients.push({'id':bb.id, 'client': cl, "creds": creds, "token": bb.token})
 			
 			res.send({
 				"success": true,
@@ -172,12 +193,34 @@ app.get('/addByCreds', function(req, res) {
 				"creds": {
 					"aid": bb.creds.gcm.androidId,
 					"st": bb.creds.gcm.securityToken
-				}
+				},
+				"token": bb.token
 			});
 		})
 })
 app.get('/save', function(req, res) {
-	jsonfile.writeFile(path_for_save, clients, function (err) {
+	let saveobj = []
+	for(let client of clients){
+		let token = null;
+		let id = null;
+
+		if(client.token){
+			token = client.token
+		}
+		if(client.id){
+			id = client.id
+		}else{
+			id = Math.floor(Math.random() * 999999999999999);
+		}
+
+		saveobj.push({
+			"id": id,
+			"creds": client.creds,
+			"token": token
+		})
+	}
+
+	jsonfile.writeFile(path_for_save, saveobj, function (err) {
 		
 		if (err){
 			res.send({
@@ -194,7 +237,7 @@ app.get('/save', function(req, res) {
 })
 app.get('/restore', function(req, res) {
 	
-	jsonfile.readFile(path_for_save, clients, function (err, obj) {
+	jsonfile.readFile(path_for_save, function (err, obj) {
 		
 		if (err){
 			res.send({
@@ -202,15 +245,30 @@ app.get('/restore', function(req, res) {
 				"error": err
 			})
 		}else{
-			for (let client of clients){
-				client._socket.destroy();
+			for (let oldclient of clients){
+				oldclient.client.destroy();
 			}
 			clients = []
-			let clients2 = obj
-			for (let client of clients2){
-				let aId = client.creds.gcm.androidId
-				let sT = client.creds.gcm.securityToken
-					let creds = {
+			events = []
+
+			for (let newclient of obj){
+				let token = null;
+				let id = null
+
+				let aId = newclient.creds.gcm.androidId
+				let sT = newclient.creds.gcm.securityToken
+
+				if(newclient.token){
+					token = newclient.token
+				}
+				if(newclient.id){
+					id = newclient.id
+				}else{
+					id = Math.floor(Math.random() * 999999999999999);
+				}
+
+
+				let creds = {
 
 					"gcm":
 						{
@@ -226,12 +284,18 @@ app.get('/restore', function(req, res) {
 						}
 
 					}
+				let params = {
+
+			    	"id": id,
+			    	"token": token,
+			    	"creds": creds
+
+			    }
 					
-				let bb = new VKPUSH(collect, creds)
+				let bb = new VKPUSH(collect, params)
 					bb.init().then((cl) => {
 
-					let cid = bb.id
-					clients.push({'id':cid, 'client': cl, "creds": creds})
+					clients.push({'id':bb.id, 'client': cl, "creds": creds, "token": bb.token})
 					})
 			}
 			res.send({
